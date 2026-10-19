@@ -1,0 +1,11 @@
+.smart-library-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:14px;align-items:end;margin-bottom:18px}
+.library-status{font-size:12px;color:var(--muted);margin:0 0 12px;border-left:3px solid var(--line);padding-left:8px}
+.library-status.complete{color:var(--accent);border-color:var(--accent)}
+.song-card-body>[data-action=library-repertoire]{margin-top:8px}
+#library-import{width:min(760px,calc(100vw - 24px));max-height:90dvh}
+#library-import-form{display:grid;gap:16px}
+#library-text-source{font-family:Consolas,monospace;white-space:pre;overflow:auto;tab-size:4}
+#library-import-error{color:var(--danger);margin:0}
+.catalogue-list .library-status{grid-column:2;margin-bottom:0}
+@media(max-width:1000px){.smart-library-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.smart-library-filters{grid-template-columns:minmax(0,1fr)}.smart-library-filters .button{width:100%}.library-actions{flex-wrap:wrap}.library-actions .button{flex:1 1 180px}.catalogue-list .library-status{grid-column:auto}}

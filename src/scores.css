@@ -1,0 +1,16 @@
+.score-reader{width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;border:0;border-radius:0;padding:0;overflow:hidden;background:var(--reader);color:var(--ink)}
+.score-reader[open]{display:flex;flex-direction:column}
+.score-reader .pdf-workspace{display:flex;flex:1;min-height:0;overflow:hidden;padding:12px}
+.score-reader .pdf-original{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;padding:8px}
+.score-reader .pdf-canvas-scroll{flex:1;min-height:0;max-height:none;width:100%;overflow:auto;background:#343b48;padding:12px;overscroll-behavior:contain;touch-action:pan-x pan-y}
+.score-reader #pdf-canvas{display:block;max-width:none!important;margin:0 auto;background:white}
+.score-reader .pdf-page-tools{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:8px}
+.score-reader .button{min-height:52px;min-width:100px;font-size:14px}
+.score-reader .pdf-status{padding:6px 20px;font-size:13px;flex-shrink:0}
+.score-reader #pdf-page-label,.score-reader output{font-variant-numeric:tabular-nums;min-width:64px;text-align:center}
+.score-files{display:flex;flex-wrap:wrap;gap:10px;padding:12px 18px}
+.score-files:empty{display:none}
+.score-form{display:grid;gap:16px}
+#score-attachment{width:min(720px,calc(100vw - 24px));max-height:90dvh}
+@media(max-width:700px){.score-reader .reader-header{padding:10px 12px}.score-reader .reader-header h2{font-size:17px}.score-reader .pdf-workspace{padding:0}.score-reader .pdf-original{padding:0}.score-reader .pdf-page-tools{gap:6px}.score-reader .button{min-width:82px;font-size:12px;padding:9px}.score-files .button{flex:1 1 180px}}
+@media(max-height:550px){.score-reader .reader-header{padding:5px 12px}.score-reader .pdf-status{padding:0 12px}.score-reader .pdf-page-tools{padding:4px}.score-reader .button{min-height:44px}}

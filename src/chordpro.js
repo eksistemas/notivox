@@ -1,0 +1,38 @@
+/* ChordPro document adapter. External renderers and imported HTML never execute. */
+(()=>{
+ const baseParse=ChordSheet.parse,baseRender=ChordSheet.render,baseTranspose=ChordSheet.transposed;
+ const aliases={t:'title',st:'subtitle',c:'comment',ci:'comment_italic',cb:'comment_box',soc:'start_of_chorus',eoc:'end_of_chorus',sov:'start_of_verse',eov:'end_of_verse',sob:'start_of_bridge',eob:'end_of_bridge',sot:'start_of_tab',eot:'end_of_tab',sog:'start_of_grid',eog:'end_of_grid',np:'new_page',npp:'new_physical_page',colb:'column_break',ns:'new_song'};
+ const metadata=new Set(['title','subtitle','sorttitle','artist','sortartist','composer','lyricist','copyright','album','year','key','time','tempo','duration','capo','tag','meta']);
+ const names={prechorus:'Pr\u00e9-refr\u00e3o',instrumental:'Instrumental',chorus:'Refrão',verse:'Estrofe',bridge:'Ponte',intro:'Introdução',outro:'Final',tab:'Tablatura',grid:'Mapa de acordes'};
+ function directive(line){const match=line.match(/^\s*\{\s*([\w-]+)(?:\s*:\s*|\s+)?(.*?)\s*\}\s*$/);if(!match)return null;const name=match[1].toLowerCase();return {name:aliases[name]||name,value:match[2]||'',raw:line};}
+ function label(value,fallback){const match=value.match(/\blabel\s*=\s*(?:"([^"]*)"|'([^']*)')/);return match?(match[1]??match[2]):value&&!/\w+=/.test(value)?value:fallback;}
+ function grid(text,steps,flats){return text.replace(/[^\s|~]+/g,token=>MusicTranspose.chord(token,steps,flats));}
+ ChordSheet.parse=function(source,lyrics=''){
+  const text=String(source||'').replace(/\r\n?/g,'\n');if(!/^\s*\{|^\s*#/m.test(text)){const result=baseParse(text,lyrics);return {...result,metadata:{},warnings:[]};}
+  const result={blocks:[],hasAlignedLyrics:false,hasLyrics:false,metadata:Object.create(null),warnings:[]},warned=new Set(),stack=[],MAX_BLOCKS=2000;let chunk=[],rawLines=[],rawKind=null,rawEnd=null,localSteps=0,localFlats=false,lastChorus=null,chorusStart=null;
+  const warn=message=>{if(!warned.has(message)&&warned.size<100){warned.add(message);result.warnings.push(message);}};
+  const flush=()=>{if(!chunk.length)return;const model=baseParse(chunk.join('\n'));const shifted=baseTranspose(model,localSteps,localFlats),remaining=MAX_BLOCKS-result.blocks.length;if(shifted.blocks.length>remaining)warn('Limite de pré-visualização atingido; o texto original continua preservado.');result.blocks.push(...shifted.blocks.slice(0,Math.max(0,remaining)));result.hasLyrics||=model.hasLyrics;result.hasAlignedLyrics||=model.hasAlignedLyrics;chunk=[];};
+  for(const line of text.split('\n')){if(result.blocks.length>=MAX_BLOCKS){warn('Limite de pré-visualização atingido; o texto original continua preservado.');break;}const d=directive(line);
+   if(rawKind){if(d?.name===rawEnd){result.blocks.push({type:rawKind,text:rawLines.join('\n')});if(rawKind==='tab'){const env=stack.pop();localSteps=env?.steps||0;localFlats=env?.flats||false;}rawLines=[];rawKind=null;rawEnd=null;}else rawLines.push(line);continue;}
+   if(/^\s*#/.test(line)){flush();continue;}if(!d){if(stack.at(-1)?.kind==='grid'){flush();result.blocks.push({type:'grid',text:grid(line,localSteps,localFlats),proGrid:true});}else chunk.push(line);continue;}flush();const {name,value}=d;
+   if(name.startsWith('x_'))continue;
+   if(metadata.has(name)){(result.metadata[name]??=[]).push(value);if(!['sorttitle','sortartist'].includes(name))result.blocks.push({type:'metadata',name,value});continue;}
+   if(['comment','highlight','comment_italic','comment_box'].includes(name)){result.blocks.push({type:'note',text:value,variant:name});continue;}
+   if(name==='transpose'){if(!value){const previous=stack.at(-1);localSteps=previous?.steps||0;localFlats=previous?.flats||false;}else{const match=value.match(/^([+-]?\d{1,3})([sf]?)$/);if(match){localSteps=Number(match[1]);localFlats=match[2]?match[2]==='f':localSteps<0;}else{warn('Diretiva transpose inválida; mantida no texto original.');result.blocks.push({type:'note',text:line});}}continue;}
+   if(['new_page','new_physical_page','column_break'].includes(name)){result.blocks.push({type:'break',kind:name});continue;}
+   if(name==='new_song'){warn('Documento com várias músicas: separe os cadastros antes de salvar.');result.blocks.push({type:'section',name:'Nova música'});continue;}
+   if(name==='chorus'){if(lastChorus){const remaining=MAX_BLOCKS-result.blocks.length;if(lastChorus.length>remaining)warn('Limite de pré-visualização atingido; o texto original continua preservado.');const blocks=structuredClone(lastChorus.slice(0,remaining));if(value&&blocks[0]?.type==='section')blocks[0].name=label(value,'Refrão');result.blocks.push(...blocks);result.hasLyrics||=blocks.some(block=>['line','lyric'].includes(block.type));}else{warn('Repetição de refrão sem refrão anterior.');result.blocks.push({type:'note',text:'Refrão'});}continue;}
+   if(name.startsWith('start_of_')){const kind=name.slice(9);if(['abc','ly','svg','textblock'].includes(kind)){rawKind='unsupported';rawEnd='end_of_'+kind;rawLines=[line];warn('Bloco '+kind+' preservado como texto; renderizador externo não executado.');continue;}if(!Object.hasOwn(names,kind)){result.blocks.push({type:'note',text:line});warn('Ambiente não interpretado: '+kind+'.');continue;}if(kind==='chorus')chorusStart=result.blocks.length;stack.push({kind,steps:localSteps,flats:localFlats});result.blocks.push({type:'section',name:label(value,names[kind])});if(kind==='tab'){rawKind='tab';rawEnd='end_of_tab';rawLines=[];}continue;}
+   if(name.startsWith('end_of_')){const kind=name.slice(7);if(kind==='chorus'&&chorusStart!==null){lastChorus=structuredClone(result.blocks.slice(chorusStart));chorusStart=null;}const env=stack.pop();if(!env||env.kind!==kind)warn('Confira o fechamento das partes: '+name+'.');if(env){localSteps=env.steps;localFlats=env.flats;}continue;}
+   if(name==='define'||name==='chord'){warn('Diagramas de acordes preservados como texto; desenho não disponível.');result.blocks.push({type:'note',text:line});continue;}
+   result.blocks.push({type:'note',text:line});warn('Diretiva preservada sem execução: '+name+'.');
+  }
+  flush();if(rawKind){result.blocks.push({type:rawKind,text:rawLines.join('\n')});warn('Bloco sem diretiva de fechamento.');}if(stack.length)warn('Há partes sem fechamento no documento.');
+  if(!result.hasLyrics&&String(lyrics).trim()){const fallback=baseParse('',lyrics);result.blocks.push(...fallback.blocks);result.hasLyrics=fallback.hasLyrics;}
+  if(result.blocks.length>MAX_BLOCKS){result.blocks.length=MAX_BLOCKS;warn('Limite de pré-visualização atingido; o texto original continua preservado.');}
+  return result;
+ };
+ ChordSheet.transposed=function(model,steps,flats=false){const shifted=baseTranspose(model,steps,flats);shifted.blocks=shifted.blocks.map((block,index)=>model.blocks[index].proGrid?{...block,text:grid(model.blocks[index].text,steps,flats)}:block);return shifted;};
+ ChordSheet.render=function(model,escape){const warnings=model.warnings?.length?'<p class="sheet-warning" role="note">'+escape(model.warnings.join(' '))+'</p>':'';return warnings+model.blocks.map(block=>{if(block.type==='metadata'){const labels={title:'Título',subtitle:'Subtítulo',artist:'Artista',key:'Tom declarado',capo:'Capotraste',tempo:'Andamento',time:'Compasso'};return '<p class="sheet-metadata"><strong>'+escape(labels[block.name]||block.name)+':</strong> '+escape(block.value)+'</p>';}if(block.type==='tab'||block.type==='unsupported')return '<pre class="sheet-verbatim">'+escape(block.text)+'</pre>';if(block.type==='break')return '<div class="sheet-print-break" aria-hidden="true"></div>';return baseRender({...model,blocks:[block]},escape);}).join('');};
+ ChordSheet.directive=directive;
+})();

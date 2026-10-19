@@ -1,0 +1,1 @@
+const fs=require('node:fs');require('./build.cjs');fs.mkdirSync('public',{recursive:true});fs.writeFileSync('public/.keep','');console.log('Vercel: interface HTML e rotas de servidor preparadas.');

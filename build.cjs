@@ -1,0 +1,33 @@
+const fs=require('node:fs');
+// Biblioteca inteligente usa os mesmos leitores e armazenamento do acervo.
+require('./build-pdf.cjs');
+fs.copyFileSync('src/shell.html','dist/index.html');fs.copyFileSync('src/theme.js','dist/theme.js');
+fs.writeFileSync('dist/app.js',['src/backup-core.js','src/app.js','src/experience.js','src/chord-sheet.js','src/chordpro.js','src/song-sections.js','src/chord-editor.js','src/section-editor.js','src/auto-scroll.js','src/reader-controls.js','src/transpose.js','src/gospel.js','src/ensemble.js','src/catalog.js','src/access-pilot.js','src/instruments.js','src/navigation.js','src/uploads.js','src/pdf-reader.js','src/backup-ui.js'].map(file=>fs.readFileSync(file,'utf8')).join('\n')+'\nbootCatalogue();\n');
+const builtApp=fs.readFileSync('dist/app.js','utf8');
+fs.writeFileSync('dist/app.js',builtApp.replace('\nbootCatalogue();', '\n'+fs.readFileSync('src/library.js','utf8')+'\n'+fs.readFileSync('src/scores.js','utf8')+'\n'+fs.readFileSync('src/offline-store.js','utf8')+'\n'+fs.readFileSync('src/pwa.js','utf8')+'\n'+fs.readFileSync('src/live-playlist.js','utf8')+'\n'+fs.readFileSync('src/combined-song-sheet.js','utf8')+'\nbootCatalogue();'));
+fs.copyFileSync('src/styles.css','dist/styles.css');
+fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/library.css','utf8'));
+fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/scores.css','utf8'));
+fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/pwa.css','utf8'));
+fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/live-playlist.css','utf8'));
+fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/combined-song-sheet.css','utf8'));
+fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/notivox.css','utf8'));
+require('./build-pwa.cjs');
+const domain=fs.readFileSync('dist/data.js','utf8')+'\nexport const {seed,validate,migrate,validURL,authorizeUpdate,searchSongs,keys,emptyDepartment}=ADNIPO;\n';
+fs.writeFileSync('domain.mjs',domain);
+const assets={};const add=(route,file,type)=>{assets[route]={type,data:fs.readFileSync(file).toString('base64')};};
+fs.copyFileSync('src/brand/notivox-logo.png','dist/assets/logo.png');
+add('/assets/logo.png','dist/assets/logo.png','image/png');
+add('/app.html','dist/index.html','text/html; charset=utf-8');add('/login.html','login.html','text/html; charset=utf-8');
+for(const [route,file] of [['/login.js','login.js'],['/app.js','dist/app.js'],['/data.js','dist/data.js']])add(route,file,'text/javascript; charset=utf-8');
+for(const file of ['pdf.js','pdf.worker.js'])add('/assets/pdf/'+file,'dist/assets/pdf/'+file,'text/javascript; charset=utf-8');
+add('/theme.js','dist/theme.js','text/javascript; charset=utf-8');
+add('/styles.css','dist/styles.css','text/css; charset=utf-8');
+for(const file of ['manifest.webmanifest','service-worker.js','offline.html'])add('/'+file,'dist/'+file,file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.js')?'text/javascript; charset=utf-8':'application/manifest+json');
+for(const size of [192,512])add('/icons/app-'+size+'.png','dist/icons/app-'+size+'.png','image/png');
+for(let i=0;i<4;i++)add('/assets/voz-'+i+'.wav','dist/assets/voz-'+i+'.wav','audio/wav');
+fs.mkdirSync('dist/server',{recursive:true});fs.writeFileSync('dist/server/assets.mjs','export const assets='+JSON.stringify(assets)+';');fs.writeFileSync('dist/server/domain.mjs',domain);fs.copyFileSync('worker.mjs','dist/server/index.js');fs.copyFileSync('files.mjs','dist/server/files.mjs');fs.copyFileSync('dist/index.html','dist/teste.index.html');
+fs.mkdirSync('dist/.openai/drizzle',{recursive:true});fs.copyFileSync('.openai/hosting.json','dist/.openai/hosting.json');fs.cpSync('drizzle','dist/.openai/drizzle',{recursive:true});console.log('Aplicativo e servidor preparados.');
+
+fs.writeFileSync('backup-core.mjs',fs.readFileSync('src/backup-core.js','utf8')+'\nexport {AcervoBackup};\n');
+for(const file of ['backup-core.mjs','backup-server.mjs'])fs.copyFileSync(file,'dist/server/'+file);

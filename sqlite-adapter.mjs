@@ -1,0 +1,6 @@
+﻿import {DatabaseSync} from 'node:sqlite';
+import fs from 'node:fs';
+export function database(filename=':memory:'){const sqlite=new DatabaseSync(filename);sqlite.exec('PRAGMA foreign_keys=ON');const sql=fs.readdirSync('drizzle').filter(f=>f.endsWith('.sql')).sort();sqlite.exec('CREATE TABLE IF NOT EXISTS local_migrations(name TEXT PRIMARY KEY)');for(const name of sql){if(!sqlite.prepare('SELECT name FROM local_migrations WHERE name=?').get(name)){sqlite.exec('BEGIN');try{sqlite.exec(fs.readFileSync('drizzle/'+name,'utf8'));sqlite.prepare('INSERT INTO local_migrations(name) VALUES(?)').run(name);sqlite.exec('COMMIT')}catch(e){sqlite.exec('ROLLBACK');throw e;}}}
+const prep=(sql,args=[])=>({bind(...values){return prep(sql,values)},async first(){return sqlite.prepare(sql).get(...args)||null},async all(){return {results:sqlite.prepare(sql).all(...args)}},async run(){const r=sqlite.prepare(sql).run(...args);return {meta:{changes:r.changes,last_row_id:r.lastInsertRowid}}}});
+return {prepare:prep,async batch(list){sqlite.exec('BEGIN');try{const results=[];for(const s of list)results.push(await s.run());sqlite.exec('COMMIT');return results;}catch(e){sqlite.exec('ROLLBACK');throw e;}},close(){sqlite.close()}};}
+

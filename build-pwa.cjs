@@ -1,0 +1,12 @@
+const fs=require('node:fs'),crypto=require('node:crypto');
+const app=fs.readFileSync('dist/app.js','utf8'),css=fs.readFileSync('dist/styles.css','utf8');
+const fingerprint=crypto.createHash('sha256').update(app+css);
+for(const file of ['src/brand/notivox-logo.png','src/brand/app-192.png','src/brand/app-512.png','login.html','src/service-worker.js','src/manifest.webmanifest','src/shell.html','src/theme.js','dist/data.js','dist/assets/pdf/pdf.js','dist/assets/pdf/pdf.worker.js',__filename])fingerprint.update(fs.readFileSync(file));
+const version=fingerprint.digest('hex').slice(0,12);
+fs.writeFileSync('dist/app.js',app.replaceAll('__APP_VERSION__',version));
+const html=fs.readFileSync('dist/index.html','utf8').replace('</head>','<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/app-192.png"><meta name="apple-mobile-web-app-capable" content="yes"></head>');
+fs.writeFileSync('dist/index.html',html);fs.writeFileSync('dist/offline.html',html);fs.copyFileSync('src/manifest.webmanifest','dist/manifest.webmanifest');
+fs.mkdirSync('dist/icons',{recursive:true});for(const size of [192,512])fs.copyFileSync('src/brand/app-'+size+'.png','dist/icons/app-'+size+'.png');
+const paths=['/assets/logo.png','/offline.html','/app.js','/data.js','/styles.css','/theme.js','/manifest.webmanifest','/icons/app-192.png','/icons/app-512.png','/assets/pdf/pdf.js','/assets/pdf/pdf.worker.js'];
+fs.writeFileSync('dist/service-worker.js',fs.readFileSync('src/service-worker.js','utf8').replaceAll('__APP_VERSION__',version).replace('__PRECACHE__',JSON.stringify(paths)));
+console.log('Aplicativo instalável preparado. Versão '+version);

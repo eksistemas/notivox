@@ -1,0 +1,4 @@
+.runtime-status{font-size:12px;color:var(--muted);padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface-alt)}
+#app-wake{width:22px;min-height:22px;height:22px;accent-color:var(--accent)}
+#app-download-status{overflow-wrap:anywhere}
+@media(display-mode:standalone){.topbar{padding-top:max(12px,env(safe-area-inset-top))}footer{padding-bottom:max(16px,env(safe-area-inset-bottom))}}

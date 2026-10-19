@@ -1,0 +1,27 @@
+﻿node_modules/
+.runtime/
+site.tar.gz
+.sites-runtime/
+
+
+public/
+.vercel/
+.env
+.env.*
+
+.vercel
+.env*
+
+# Pacotes e dados privados ficam fora do versionamento.
+.release/
+*.zip
+*.rar
+*.tar.gz
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.pem
+*.key
+*.pfx
+*.log

@@ -1,0 +1,42 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import fs from 'node:fs';
+const handlers=[];const context=vm.createContext({pdfImportButton:()=>'',document:{addEventListener:(type,handler)=>handlers.push(handler)}});
+vm.runInContext(fs.readFileSync('src/transpose.js','utf8'),context);
+for(const file of ['src/chord-sheet.js','src/auto-scroll.js','src/reader-controls.js'])vm.runInContext(fs.readFileSync(file,'utf8'),context);
+const run=expression=>vm.runInContext(expression,context);
+test('transpõe acordes, baixos, extensões, bemóis e volta à oitava',()=>{
+ assert.equal(run("MusicTranspose.chord('C/G',2)"),'D/A');
+ assert.equal(run("MusicTranspose.chord('Bm7(b5)/F#',-2)"),'Am7(b5)/E');
+ assert.equal(run("MusicTranspose.chord('Bbmaj7',2,true)"),'Cmaj7');
+ assert.equal(run("MusicTranspose.chord('C',-1)"),'B');
+ assert.equal(run("MusicTranspose.chord('Eb',12,true)"),'Eb');
+ assert.equal(run("MusicTranspose.chord('F#sus4',1)"),'Gsus4');
+});
+test('transpõe grades e acordes entre colchetes preservando letras e espaços',()=>{
+ assert.equal(run("MusicTranspose.text('Intro | C | G/B | Am7 | F |',2)"),'Intro | D | A/C# | Bm7 | G |');
+ assert.equal(run("MusicTranspose.text('C    G/B    Am\\nA tua presença é meu abrigo\\n[C]Cantamos [G/B]juntos',2)"),'D    A/C#    Bm\nA tua presença é meu abrigo\n[D]Cantamos [A/C#]juntos');
+});
+test('cliques alteram a consulta, restauração mantém cadastro intacto',()=>{
+ context.currentSong={id:'one',key:'C',chords:'C G/B Am',resources:[]};
+ context.esc=String;context.button=(label)=>label;context.isAdmin=()=>false;context.empty=String;
+ const nodes=new Map();const node=selector=>{if(!nodes.has(selector))nodes.set(selector,{innerHTML:'',textContent:'',style:{},setAttribute(){},focus(){}});return nodes.get(selector);};
+ const reader={open:false,innerHTML:'',classList:{toggle(){}},showModal(){this.open=true;},close(){this.open=false;},querySelector:node,querySelectorAll:()=>[]};
+ context.detail=()=>{};context.$=selector=>selector==='#cifra-reader'?reader:{open:true,querySelector:node};
+ run("readerMode='map';cifraContent(currentSong)");
+ const click=(action,steps)=>handlers[0]({target:{closest:()=>({dataset:{action,steps}})}});
+ click('transpose','2');assert(reader.open);assert(node('.reader-tone').innerHTML.includes('Tom: D'));assert(node('.reader-sheet').innerHTML.includes('D A/C# Bm'));
+ context.scrollMock={running:true,speed:24,stop(){this.running=false;}};run('readerAutoScroll=scrollMock');
+ click('transpose','-2');assert(node('.reader-tone').innerHTML.includes('Tom: C'));
+ assert(context.scrollMock.running);
+ click('transpose','1');click('transpose-reset');assert(node('.reader-tone').innerHTML.includes('Tom: C'));assert.equal(context.currentSong.chords,'C G/B Am');
+ handlers[0]({target:{closest:()=>({dataset:{action:'cifra-font',size:'2'}})}});assert.equal(node('.reader-sheet').style.fontSize,'26px');
+ click('cifra-reader-close');assert.equal(reader.open,false);
+ assert.equal(context.scrollMock.running,false);
+ context.currentSong={...context.currentSong,id:'two',key:'G'};assert(run('cifraContent(currentSong)').includes('Tom: G'));
+ click('cifra-reader');click('transpose','2');
+ let printed=false;const classes=new Set();context.document.body={classList:{add:name=>classes.add(name),remove:name=>classes.delete(name)}};
+ context.window={print:()=>{assert(classes.has('printing-cifra'));assert(node('.reader-print-meta').textContent.includes('Tom: A'));assert(node('.reader-sheet').innerHTML.includes('D A/C# Bm'));printed=true;}};
+ click('cifra-print');assert(printed);assert(!classes.has('printing-cifra'));
+});

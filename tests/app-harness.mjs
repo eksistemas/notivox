@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
+
+export async function app(){
+ const elements=new Map(),saved=new Map(),handlers=new Map(),media={matches:true,addEventListener(type,fn){this.change=fn;}},mobile={matches:true,addEventListener(type,fn){this.change=fn;}};
+ const classes=()=>{const values=new Set();return {add:name=>values.add(name),remove:name=>values.delete(name),contains:name=>values.has(name),toggle(name,on){if(on??!values.has(name))values.add(name);else values.delete(name);}};};
+ const element=selector=>{if(!elements.has(selector))elements.set(selector,{innerHTML:'',textContent:'',value:'',hidden:true,open:false,style:{},dataset:{},classList:classes(),attributes:{},handlers:new Map(),addEventListener(type,fn){this.handlers.set(type,fn);},setAttribute(name,value){this.attributes[name]=value;},removeAttribute(name){delete this.attributes[name];},showModal(){this.open=true;},close(){this.open=false;},focus(){context.document.activeElement=this;},children:[],append(child){this.children.push(child);},prepend(child){this.children.unshift(child);},after(){},remove(){},querySelectorAll(){return [];},querySelector(query){return element(selector+' '+query);}});return elements.get(selector);};
+ const context=vm.createContext({document:{documentElement:{dataset:{},style:{}},querySelector:element,querySelectorAll:()=>[],body:element('body'),createElement:()=>element('cover'),addEventListener(type,fn){if(!handlers.has(type))handlers.set(type,[]);handlers.get(type).push(fn);}},location:{protocol:'file:',hash:''},window:{matchMedia:query=>query.includes('prefers-color')?media:mobile,addEventListener(){}},localStorage:{getItem:key=>saved.get(key)||null,setItem:(key,value)=>saved.set(key,value)},structuredClone,console,URL,Blob,CSS:{escape:String},crypto:webcrypto,setTimeout:()=>0,clearTimeout(){},clearInterval(){},setInterval:()=>1,confirm:()=>true});
+ for(const file of ['src/theme.js','dist/data.js','dist/app.js'])vm.runInContext(fs.readFileSync(file,'utf8'),context);await new Promise(resolve=>setImmediate(resolve));
+ return {context,elements,saved,media,mobile,run:code=>vm.runInContext(code,context),async click(action,id,extra={}){const target={dataset:{action,id,...extra},closest(selector){if(selector==='[data-action]')return this;return null;}};for(const fn of handlers.get('click')||[])await fn({target,preventDefault(){}});},key(event){for(const fn of handlers.get('keydown')||[])fn(event);}};
+}

@@ -1,0 +1,19 @@
+{
+  "name": "sistema-acervo-musical",
+  "private": true,
+  "scripts": {
+    "build": "node build.cjs",
+    "test": "node --test tests/*.test.mjs",
+    "vercel-build": "node build-vercel.cjs"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.0",
+    "drizzle-orm": "^0.44.0",
+    "esbuild": "^0.28.2",
+    "pdfjs-dist": "^6.4.299"
+  },
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  }
+}

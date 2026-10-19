@@ -1,0 +1,26 @@
+﻿import test from 'node:test';import assert from 'node:assert/strict';import worker from '../dist/server/index.js';import {database} from '../sqlite-adapter.mjs';
+test('login, sessões e permissões protegem o sistema',async()=>{const DB=database(),env={DB,LOCAL_ONLY:true,REQUIRE_LOGIN:true};const request=async(path,method='GET',data,cookie,origin='http://127.0.0.1:4173')=>worker.fetch(new Request('http://127.0.0.1:4173'+path,{method,headers:{...(method==='GET'?{}:{Origin:origin,'Content-Type':'application/json'}),...(cookie?{Cookie:cookie}:{})},...(data?{body:JSON.stringify(data)}:{})}),env);
+let r=await request('/');assert.equal(r.status,303);assert.equal(r.headers.get('location'),'/login');
+assert.equal((await request('/api/data')).status,401);assert.equal((await request('/app.js')).status,303);
+const creds={username:'teste.admin',password:'SenhaSomenteTeste123!',confirm:'SenhaSomenteTeste123!'};
+assert.equal((await request('/api/setup','POST',creds,null,'http://evil.example')).status,403);
+assert.equal((await request('/api/setup','POST',{...creds,password:'abc',confirm:'abc'})).status,400);
+r=await request('/api/setup','POST',creds);assert.equal(r.status,200);const adminCookie=r.headers.get('set-cookie').split(';')[0];assert.match(r.headers.get('set-cookie'),/HttpOnly/);assert.match(r.headers.get('set-cookie'),/SameSite=Strict/);
+assert.equal((await request('/api/setup','POST',creds)).status,409);
+r=await request('/api/me','GET',null,adminCookie);assert.equal((await r.json()).user.role,'admin');
+r=await request('/api/data','GET',null,adminCookie);const data=await r.json();assert.equal(data.data.songs.length,3);
+assert.equal((await request('/api/data','PUT',{data:data.data,revision:data.revision},adminCookie)).status,200);
+assert.equal((await request('/api/data','PUT',{data:data.data,revision:data.revision},adminCookie)).status,409);
+assert.equal((await request('/api/users','POST',{username:'teste.equipe',password:'SenhaEquipeTeste123!',role:'member'},adminCookie)).status,201);
+r=await request('/api/login','POST',{username:'teste.equipe',password:'errada'});assert.equal(r.status,401);
+r=await request('/api/login','POST',{username:'teste.equipe',password:'SenhaEquipeTeste123!'});assert.equal(r.status,200);const memberCookie=r.headers.get('set-cookie').split(';')[0];
+assert.equal((await request('/api/data','GET',null,memberCookie)).status,200);
+assert.equal((await request('/api/data','PUT',{data:data.data,revision:2},memberCookie)).status,403);
+assert.equal((await request('/api/users','GET',null,memberCookie)).status,403);
+r=await request('/api/users','GET',null,adminCookie);const users=await r.json();assert.equal(users.users.length,3);assert(!JSON.stringify(users).includes('password_hash'));
+assert.equal((await request('/api/logout','POST',{},memberCookie)).status,200);
+assert.equal((await request('/api/me','GET',null,memberCookie)).status,401);
+const row=await DB.prepare('SELECT * FROM users WHERE id=1').first();assert.notEqual(row.password_hash,creds.password);assert.equal(row.password_hash.length,64);
+for(let i=0;i<9;i++)r=await request('/api/login','POST',{username:'naoexiste',password:'SenhaInvalidaTeste!'});assert.equal(r.status,429);
+DB.close();});
+

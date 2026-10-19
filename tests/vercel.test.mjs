@@ -1,0 +1,24 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {createHandler} from '../lib/vercel-handler.mjs';import worker from '../dist/server/index.js';import {database} from '../sqlite-adapter.mjs';
+const origin='https://adnipo-culto-fe.vercel.app',backend='https://backend.example';
+const req=(path,method='GET',data,cookie,requestOrigin=origin)=>new Request(origin+'/api/site?path='+encodeURIComponent(path),{method,headers:{...(method==='GET'?{}:{Origin:requestOrigin,'Content-Type':'application/json'}),...(cookie?{Cookie:cookie}:{})},...(data?{body:JSON.stringify(data)}:{})});
+test('Vercel bloqueia rotas, CSRF e operações sem conexão',async()=>{let calls=0;const handler=createHandler({getBackend:()=>backend,getToken:()=>'',fetchImpl:()=>{calls++;throw Error('não deve chamar')}});
+assert.equal((await handler(req('/'))).status,200);assert.equal((await handler(req('/api/status'))).status,503);assert.equal((await handler(req('/app.js'))).status,503);assert.equal((await handler(req('//example.com/'))).status,404);assert.equal((await handler(req('/api/login','POST',{},null,'https://evil.example'))).status,403);assert.equal(calls,0);
+});
+test('Vercel preserva login, sessão, CRUD e autorização do backend',async()=>{const DB=database(),env={DB,LOCAL_ONLY:true,REQUIRE_LOGIN:true};const setup=await worker.fetch(new Request('http://127.0.0.1:4173/api/setup',{method:'POST',headers:{Origin:'http://127.0.0.1:4173','Content-Type':'application/json'},body:JSON.stringify({username:'Admin',password:'1234',confirm:'1234'})}),env);assert.equal(setup.status,200);
+const handler=createHandler({getBackend:()=>backend,getToken:()=> 'test-service-token',fetchImpl:async(url,options)=>{assert(url.startsWith(backend+'/'));assert.equal(options.headers.get('OAI-Sites-Authorization'),'Bearer test-service-token');assert.equal(options.redirect,'manual');if(options.method==='POST'||options.method==='PUT')assert.equal(options.headers.get('Origin'),backend);return worker.fetch(new Request(url,options),{DB,REQUIRE_LOGIN:true});}});
+let r=await handler(req('/api/status'));assert.equal(r.status,200);assert.equal((await r.json()).setupRequired,false);
+r=await handler(req('/api/login','POST',{username:'Admin',password:'errada'}));assert.equal(r.status,401);
+r=await handler(req('/api/login','POST',{username:'Admin',password:'1234'}));assert.equal(r.status,200);assert.match(r.headers.get('set-cookie'),/Secure/);const cookie=r.headers.get('set-cookie').split(';')[0];
+r=await handler(req('/','GET',null,cookie));assert.equal(r.status,200);assert.match(await r.text(),/<title>Notivox<\/title>/);
+r=await handler(req('/api/data','GET',null,cookie));const state=await r.json();assert.equal(state.data.songs.length,3);
+state.data.songs.push({...state.data.songs[0],id:'novo-teste',name:'Novo louvor'});
+r=await handler(req('/api/data','PUT',state,cookie));assert.equal(r.status,200);state.revision=(await r.json()).revision;
+state.data.songs.find(s=>s.id==='novo-teste').name='Louvor alterado';r=await handler(req('/api/data','PUT',state,cookie));assert.equal(r.status,200);state.revision=(await r.json()).revision;
+state.data.songs=state.data.songs.filter(s=>s.id!=='novo-teste');assert.equal((await handler(req('/api/data','PUT',state,cookie))).status,200);
+assert.equal((await handler(req('/api/data'))).status,401);r=await handler(req('/app.js'));assert.equal(r.status,303);assert.equal(r.headers.get('location'),'/login');
+assert.equal((await handler(req('/api/logout','POST',{},cookie))).status,200);assert.equal((await handler(req('/api/data','GET',null,cookie))).status,401);
+DB.close();});
+test('redirecionamento externo do backend não expõe credencial',async()=>{const handler=createHandler({getBackend:()=>backend,getToken:()=> 'test-service-token',fetchImpl:async()=>new Response(null,{status:302,headers:{Location:'https://example.com/'}})});assert.equal((await handler(req('/api/status'))).status,503);});
+
+test('Vercel exige endereco do servidor configurado',async()=>{let called=false;const handler=createHandler({getBackend:()=>'',getToken:()=> 'test-token',fetchImpl:()=>{called=true;}});assert.equal((await handler(req('/api/data'))).status,503);assert.equal(called,false);});
+test('Vercel rejeita endereco inseguro antes de enviar token',async()=>{for(const backend of ['http://backend.example','https://user:pass@backend.example','https://backend.example/path']){let called=false;const handler=createHandler({getBackend:()=>backend,getToken:()=> 'test-token',fetchImpl:()=>{called=true;}});assert.equal((await handler(req('/api/data'))).status,503);assert.equal(called,false);}});

@@ -1,0 +1,11 @@
+/* Identidade visual; não altera a geometria das cifras e dos leitores. */
+.brand .acervo-brand{display:flex;align-items:center;gap:10px;letter-spacing:-.8px;font-size:26px}
+.brand .acervo-brand>span{font-weight:800;line-height:1.15}
+.brand .acervo-brand{color:var(--ink)}
+.notivox-mark{box-shadow:0 4px 12px #08234a18}
+.notivox-mark,.brand-short img{display:block;border-radius:11px;flex:none}
+.brand>span:last-child{display:block;max-width:210px;font-size:9px;line-height:1.6;letter-spacing:1px;margin-top:10px}
+.notivox-login-logo{display:block;width:min(100%,320px);height:auto;border-radius:24px;margin:0 0 24px;background:#fff;box-shadow:0 16px 48px #09204918}
+.login-identity:has(.notivox-login-logo) .eyebrow{color:var(--accent)}
+@media(min-width:1001px){.sidebar-collapsed .brand>.acervo-brand{display:none}.sidebar-collapsed .brand-short{background:transparent}}
+@media(max-width:700px){.notivox-login-logo{width:190px;margin-bottom:20px;border-radius:18px}.brand .acervo-brand{font-size:24px}}
