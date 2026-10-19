@@ -23,6 +23,10 @@ function prepareRelease({complete=false}={}) {
     entries.push({file:relative.replaceAll('\\','/'),sha256:crypto.createHash('sha256').update(fs.readFileSync(source)).digest('hex')});
   }
   for (const name of [...folders,...files]) copy(name);
+  copy('vercel.json');
+  copy('verify-vercel-build.mjs');
+  copy('supabase/migrations');
+  copy('prepare-notivox-admin.mjs');
   if(complete){
     copy('db');copy('prepare-release.cjs');
     for(const name of fs.readdirSync(root))if(name.endsWith('.md')&&!files.includes(name))copy(name);

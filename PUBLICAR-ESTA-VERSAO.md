@@ -17,7 +17,11 @@ Na versão principal, os dados continuam no armazenamento existente, e a autenti
 
 Este ZIP é código para preparação e revisão, não um site estático pronto para hospedar somente a pasta dist. O sistema depende de um backend com banco e armazenamento persistente. O servidor local da porta 4173 está restrito ao próprio computador e não deve ser exposto como hospedagem pública.
 
-A integração web existente está em `api/site.js` e `lib/vercel-handler.mjs`, com compilação `npm run vercel-build`. Ela exige um backend compatível já provisionado e as variáveis privadas `ADNIPO_BACKEND_URL` (HTTPS) e `ADNIPO_BACKEND_TOKEN`. Não inclua essas variáveis no JavaScript público. Configure o roteamento do provedor para encaminhar as rotas da aplicação ao handler preservando o caminho solicitado; a configuração depende do destino escolhido.
+A integração web existente está em `api/site.js` e `lib/vercel-handler.mjs`, com compilação `npm run vercel-build`. O arquivo `vercel.json` fixa Framework Preset **Other** (`null`), instalação `npm ci`, saída `public` e encaminhamento das rotas à função. Não use o preset **Node**: ele pode detectar `server.cjs`, que é exclusivo da instalação local. Não use `dist` como pasta pública.
+
+Há duas opções de backend. A integração Supabase está preparada localmente e exige sua migração e configuração antes de funcionar: `NOTIVOX_DATABASE_URL` (conexão do usuário privado `notivox_app`), `SUPABASE_URL` e `SUPABASE_SECRET_KEY`, todas somente no servidor. Consulte `CONFIGURAR-SUPABASE-NOTIVOX.md`. A opção anterior de backend externo continua disponível por `ADNIPO_BACKEND_URL` e `ADNIPO_BACKEND_TOKEN`; não misture as configurações. Não aponte a URL de backend externo para o próprio frontend nem use URL/chave Supabase como substitutos das variáveis dessa opção anterior.
+
+Sem backend configurado, a tela de entrada, a marca e os recursos públicos podem ser exibidos, mas as APIs privadas retornam 503. Isso não representa um login funcional. Banco e anexos precisam de armazenamento persistente externo; não usar SQLite em memória, `/tmp` ou disco da função para substituir o acervo real. Veja `RELATORIO-CORRECAO-VERCEL.md` para o diagnóstico e os resultados.
 
 Antes de atualizar um ambiente real: exporte e confira um backup completo usando a função existente, mantenha banco e anexos persistentes, valide a versão em um ambiente de homologação HTTPS e depois confira login, permissões, upload, PDFs, repertório e atualização do aplicativo. A preparação deste pacote não executa migrações no banco nem faz deploy.
 

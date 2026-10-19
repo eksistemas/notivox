@@ -30,6 +30,6 @@ As dependências `node_modules` são instaladas por `npm ci`; não estão no ZIP
 
 ## Publicação
 
-Leia `PUBLICAR-ESTA-VERSAO.md`. A versão atual não foi publicada e ainda não está integrada ao Supabase. Ter contas Vercel e Supabase não configura automaticamente banco, anexos e autenticação.
+Leia `PUBLICAR-ESTA-VERSAO.md` e `CONFIGURAR-SUPABASE-NOTIVOX.md`. O adaptador Supabase está preparado no código, mas depende da configuração privada e da migração revisada. Não houve publicação nem aplicação automática das tabelas no banco remoto.
 
 O arquivo `MANIFESTO-SHA256.json` registra os arquivos do pacote e suas assinaturas para conferência de integridade.
