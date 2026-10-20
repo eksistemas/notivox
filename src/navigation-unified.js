@@ -5,8 +5,7 @@ function goHome(){filters.query='';filters.category='';filters.instrument='';loc
 function goBack(){const previous=navigationTrail.pop();if(!previous){goHome();return;}filters.query=previous.query||'';filters.instrument=previous.instrument||'';filters.category=previous.category||'';navigationPosition=null;location.hash='#'+previous.page;render();toggleMenu(false);$('#main').focus();}
 function syncNavigationContext(){
  departmentId=state.departments[0].id;
- $('#current-page-label').textContent=currentSection()?.title||({cadastroemail:'Cadastro por e-mail',acessos:'Liberação de acessos',instrumentos:'Instrumentos e vozes'}[page])||'Acervo geral';
- $('#current-page-label').classList.toggle('home-heading',false);$('#storage-label').textContent=location.protocol==='file:'?'Salvo neste navegador':'Acervo compartilhado';
+ const currentPage=$('#current-page-label');if(currentPage){currentPage.textContent=currentSection()?.title||({cadastroemail:'Cadastro por e-mail',acessos:'Liberação de acessos',instrumentos:'Instrumentos e vozes'}[page])||'Acervo geral';currentPage.classList.toggle('home-heading',false);}const storageLabel=$('#storage-label');if(storageLabel)storageLabel.textContent=location.protocol==='file:'?'Salvo neste navegador':'Acervo compartilhado';
  $$('[data-section-nav]').forEach(link=>{link.setAttribute('aria-disabled','false');link.classList.remove('nav-unavailable');});
  $$('[data-admin-only]').forEach(element=>{element.hidden=!isAdmin();});$$('[data-visitor-only]').forEach(element=>{element.hidden=isAdmin();});
 }

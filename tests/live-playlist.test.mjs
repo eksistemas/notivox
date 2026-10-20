@@ -58,7 +58,7 @@ test('perfil de consulta usa playlist sem obter privilégios; fila vazia e ID in
  const ui=await app();ui.run("authenticatedUser={id:9,role:'member'}");assert.equal(ui.run("startLivePlaylist('caminho')"),true);assert.equal(ui.run('isAdmin()'),false);assert.equal(ui.run("liveSelect('missing')"),false);ui.run('endLivePlaylist();state.departments[0].repertoire=[]');assert.equal(ui.run('startLivePlaylist()'),false);assert(ui.run('playlistView()').includes('Montar repertório'));
 });
 test('layout e navegação identificam ações por texto e CSS válido em desktop e celular',()=>{
- const shell=fs.readFileSync('src/shell.html','utf8');assert(shell.includes('href="#playlist"'));assert(shell.includes('aria-label="Playlist ao vivo"'));
+ const shell=fs.readFileSync('src/simple-interface.js','utf8');assert(shell.includes('href="#inicio/playlist"'));assert(shell.includes('Playlist ao vivo'));
  for(const file of ['src/live-playlist.css','dist/styles.css'])assert.equal(esbuild.transformSync(fs.readFileSync(file,'utf8'),{loader:'css',logLevel:'silent'}).warnings.length,0);
 });
 

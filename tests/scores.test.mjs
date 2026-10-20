@@ -25,7 +25,7 @@ test('associa múltiplas partituras ao ID existente, inclui Trompete e preserva 
  const old=JSON.parse(before),after=JSON.parse(ui.run('JSON.stringify(state.songs[0])'));assert.deepEqual({...after,resources:old.resources},old);
  assert.equal(after.resources.length,old.resources.length+2);assert(ui.run("state.instruments.some(item=>item.name==='Trompete')"));
  ui.run("location.hash='#partituras';filters.instrument='Trompete';render()");assert(ui.elements.get('#song-grid').innerHTML.includes('Caminho de Fé'));
- ui.elements.get('#global-search').oninput({target:{value:'caminho'}});assert.equal(ui.run('page'),'partituras');assert.equal(ui.run('filters.instrument'),'Trompete');assert.equal(ui.run('catalogueSongs().length'),1);
+ ui.elements.get('#global-search').oninput({target:{value:'caminho'}});assert.equal(ui.run('page'),'acervo');assert.equal(ui.run('filters.material'),'partitura');assert.equal(ui.run('filters.instrument'),'Trompete');assert.equal(ui.run('catalogueSongs().length'),1);
  ui.run("filters.instrument='Piano';updateCatalogue()");assert.equal(ui.run('catalogueSongs().length'),0);
 });
 test('associação valida instrumento, arquivo e permissão sem modificar dados ao rejeitar',async()=>{
@@ -37,7 +37,7 @@ test('associação valida instrumento, arquivo e permissão sem modificar dados 
  assert.equal(ui.run('JSON.stringify(state)'),before);
 });
 test('repertório oferece partituras em sua ordem e retorna sem alterar entradas ou tons',async()=>{
- const ui=await app();ui.run("state.songs[0].resources.push({id:'drums',type:'partitura',instrument:'Bateria',label:'Bateria.pdf',url:'https://example.com/bateria.pdf'});location.hash='#repertorio';render()");
+ const ui=await app();ui.run("state.songs[0].resources.push({id:'drums',type:'partitura',instrument:'Bateria',label:'Bateria.pdf',url:'https://example.com/bateria.pdf'});location.hash='#ensaio';render()");
  const html=ui.elements.get('#main').innerHTML,before=ui.run('JSON.stringify(department().repertoire)');assert(html.includes('data-resource="drums"'));assert(html.includes('Bateria.pdf · Bateria'));assert(html.indexOf('Caminho de Fé')<html.indexOf('Tua Luz Nos Guia'));
  ui.run('closeScorePdf(true)');assert.equal(ui.run('page'),'repertorio');assert.equal(ui.run('JSON.stringify(department().repertoire)'),before);
 });

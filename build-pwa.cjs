@@ -4,7 +4,7 @@ const fingerprint=crypto.createHash('sha256').update(app+css);
 for(const file of ['src/brand/notivox-logo.png','src/brand/app-192.png','src/brand/app-512.png','login.html','src/service-worker.js','src/manifest.webmanifest','src/shell.html','src/theme.js','dist/data.js','dist/assets/pdf/pdf.js','dist/assets/pdf/pdf.worker.js',__filename])fingerprint.update(fs.readFileSync(file));
 const version=fingerprint.digest('hex').slice(0,12);
 fs.writeFileSync('dist/app.js',app.replaceAll('__APP_VERSION__',version));
-const html=fs.readFileSync('dist/index.html','utf8').replace('</head>','<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/app-192.png"><meta name="apple-mobile-web-app-capable" content="yes"></head>');
+const html=fs.readFileSync('dist/index.html','utf8').replace('href="styles.css"','href="styles.css?v='+version+'"').replace('src="app.js"','src="app.js?v='+version+'"').replace('</head>','<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/app-192.png"><meta name="apple-mobile-web-app-capable" content="yes"></head>');
 fs.writeFileSync('dist/index.html',html);fs.writeFileSync('dist/offline.html',html);fs.copyFileSync('src/manifest.webmanifest','dist/manifest.webmanifest');
 fs.mkdirSync('dist/icons',{recursive:true});for(const size of [192,512])fs.copyFileSync('src/brand/app-'+size+'.png','dist/icons/app-'+size+'.png');
 const paths=['/assets/logo.png','/offline.html','/app.js','/data.js','/styles.css','/theme.js','/manifest.webmanifest','/icons/app-192.png','/icons/app-512.png','/assets/pdf/pdf.js','/assets/pdf/pdf.worker.js'];

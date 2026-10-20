@@ -9,13 +9,19 @@ export async function fileRoutes(request,env,user){
  const path=new URL(request.url).pathname;if(!path.startsWith('/api/uploads')&&!path.startsWith('/api/media/'))return null;
  const bucket=env.BUCKET;if(!bucket)return json({error:'O armazenamento de arquivos ainda não está disponível.'},503);
  if(!user)return json({error:'Acesso não autorizado.'},401);
- if(path.startsWith('/api/uploads')&&user.role!=='admin')return json({error:'Somente o administrador geral pode adicionar arquivos ao acervo.'},403);
  if(path==='/api/uploads'&&request.method==='POST'){
  const meta=await request.json();const name=typeof meta.name==='string'?meta.name.trim():'';const ext=name.split('.').at(-1).toLowerCase();if(!name||name.length>200||!types[ext])error('Formato de arquivo não permitido.',400);if(!Number.isInteger(meta.size)||meta.size<1||meta.size>MAX_FILE_SIZE)error('Selecione um arquivo de até 200 MB.',400);
- const id=crypto.randomUUID();const manifest={id,name,size:meta.size,mime:types[ext],parts:Math.ceil(meta.size/PART_SIZE),createdBy:user.id,createdAt:Date.now(),status:'pending'};await bucket.put(key(id),JSON.stringify(manifest));return json({id,partSize:PART_SIZE},201);
+ const audioExtensions=['mp3','wav','m4a','ogg','aac','flac'];const purpose=meta.purpose==='song-audio'?'song-audio':'catalogue';if(user.role!=='admin'&&(purpose!=='song-audio'||!audioExtensions.includes(ext)))error('Músicos podem enviar apenas arquivos de áudio para novas músicas.',403);if(purpose==='song-audio'&&!audioExtensions.includes(ext))error('Formato de áudio inválido.',400);
+ const id=crypto.randomUUID();const manifest={id,name,size:meta.size,mime:types[ext],parts:Math.ceil(meta.size/PART_SIZE),createdBy:user.id,createdAt:Date.now(),status:'pending',purpose};await bucket.put(key(id),JSON.stringify(manifest));return json({id,partSize:PART_SIZE},201);
  }
  const route=/^\/api\/(uploads|media)\/([a-f0-9-]{36})(?:\/(\d+|complete|cancel))?$/.exec(path);if(!route)return json({error:'Arquivo não encontrado.'},404);
  const [,scope,id,action]=route;const object=await bucket.get(key(id));if(!object)return json({error:'Arquivo não encontrado.'},404);const manifest=await object.json();
+ if(scope==='uploads'&&!action&&request.method==='DELETE'){
+ if(user.role!=='admin'&&!(manifest.createdBy===user.id&&manifest.purpose==='song-audio'))error('Sem permissão para remover este arquivo.',403);
+ if(manifest.status!=='complete')error('Somente arquivos concluídos podem ser removidos.',409);
+ const row=await env.DB?.prepare('SELECT payload FROM app_data WHERE id=1').first();if(!row?.payload)error('Não foi possível verificar as referências ao arquivo.',503);let data;try{data=JSON.parse(row.payload);}catch{error('Não foi possível verificar as referências ao arquivo.',409);}const referenced=data.songs?.some(song=>(song.resources||[]).some(resource=>resource.fileId===id));if(referenced)error('O arquivo ainda está associado ao acervo.',409);
+ await bucket.delete([key(id),...Array.from({length:manifest.parts},(_,index)=>partKey(id,index))]);return json({ok:true});
+ }
  if(scope==='uploads'){
  if(manifest.createdBy!==user.id)error('Envio não autorizado.',403);
  if(action==='cancel'&&request.method==='POST'){if(manifest.status==='complete')error('O arquivo já foi concluído.',409);await bucket.delete([key(id),...Array.from({length:manifest.parts},(_,index)=>partKey(id,index))]);return json({ok:true});}

@@ -5,6 +5,7 @@ fs.copyFileSync('src/shell.html','dist/index.html');fs.copyFileSync('src/theme.j
 fs.writeFileSync('dist/app.js',['src/backup-core.js','src/app.js','src/experience.js','src/chord-sheet.js','src/chordpro.js','src/song-sections.js','src/chord-editor.js','src/section-editor.js','src/auto-scroll.js','src/reader-controls.js','src/transpose.js','src/gospel.js','src/ensemble.js','src/catalog.js','src/access-pilot.js','src/instruments.js','src/navigation.js','src/uploads.js','src/pdf-reader.js','src/backup-ui.js'].map(file=>fs.readFileSync(file,'utf8')).join('\n')+'\nbootCatalogue();\n');
 const builtApp=fs.readFileSync('dist/app.js','utf8');
 fs.writeFileSync('dist/app.js',builtApp.replace('\nbootCatalogue();', '\n'+fs.readFileSync('src/library.js','utf8')+'\n'+fs.readFileSync('src/scores.js','utf8')+'\n'+fs.readFileSync('src/offline-store.js','utf8')+'\n'+fs.readFileSync('src/pwa.js','utf8')+'\n'+fs.readFileSync('src/live-playlist.js','utf8')+'\n'+fs.readFileSync('src/combined-song-sheet.js','utf8')+'\nbootCatalogue();'));
+fs.writeFileSync('dist/app.js',fs.readFileSync('dist/app.js','utf8').replace('\nbootCatalogue();',()=> '\n'+fs.readFileSync('src/simple-interface.js','utf8')+'\nbootCatalogue();'));
 fs.copyFileSync('src/styles.css','dist/styles.css');
 fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/library.css','utf8'));
 fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/scores.css','utf8'));
@@ -12,6 +13,7 @@ fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/pwa.css','utf8'));
 fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/live-playlist.css','utf8'));
 fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/combined-song-sheet.css','utf8'));
 fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/notivox.css','utf8'));
+fs.appendFileSync('dist/styles.css','\n'+fs.readFileSync('src/simple-interface.css','utf8'));
 require('./build-pwa.cjs');
 const domain=fs.readFileSync('dist/data.js','utf8')+'\nexport const {seed,validate,migrate,validURL,authorizeUpdate,searchSongs,keys,emptyDepartment}=ADNIPO;\n';
 fs.writeFileSync('domain.mjs',domain);

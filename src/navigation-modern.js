@@ -5,7 +5,7 @@ function goHome(){filters.query='';filters.category='';filters.instrument='';loc
 function goBack(){const previous=navigationTrail.pop();if(!previous){goHome();return;}filters.query=previous.query||'';filters.instrument=previous.instrument||'';filters.category=previous.category||'';navigationPosition=null;location.hash='#'+previous.page;render();$('#main').focus();}
 function syncNavigationContext(){
  departmentId=state.departments[0].id;
- $('#current-page-label').textContent=currentSection()?.title||viewTitles[page]||'Acervo geral';
+ const currentPage=$('#current-page-label');if(currentPage)currentPage.textContent=currentSection()?.title||viewTitles[page]||'Acervo geral';
  $('#storage-label').textContent=location.protocol==='file:'?'Neste dispositivo':'Acervo compartilhado';
  $$('[data-section-nav]').forEach(link=>link.setAttribute('aria-disabled','false'));
  $$('[data-admin-only]').forEach(element=>{element.hidden=!isAdmin();});$$('[data-visitor-only]').forEach(element=>{element.hidden=isAdmin();});

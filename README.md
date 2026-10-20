@@ -1,5 +1,7 @@
 # Sistema de Acervo Musical
 
+Consulte [docs/notivox-produto.md](docs/notivox-produto.md) para rotas do Notivox, áudio, permissões e provisionamento inicial seguro do administrador.
+
 ## Executar e preparar para publicação
 
 Use Node.js 24, execute `npm ci`, `npm run build` e `npm test`. Inicie `node server.cjs` e abra **http://127.0.0.1:4173/**. Para validar login, permissões e acervo do servidor, use esse endereço. As instruções antigas de abrir HTML diretamente servem apenas ao modo local de demonstração, com armazenamento separado.
