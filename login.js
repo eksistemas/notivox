@@ -7,6 +7,15 @@ const adminPath=location.pathname==='/admin/login';
 const identity=document.querySelector('#identity');
 const copy=document.querySelector('#login-description');
 const kicker=document.querySelector('#login-kicker');
+const signupSwitch=document.querySelector('#signup-switch');
+const signupOpen=document.querySelector('#signup-open');
+const signupForm=document.querySelector('#signup-form');
+const signupIdentity=document.querySelector('#signup-identity');
+const signupPassword=document.querySelector('#signup-password');
+const signupConfirm=document.querySelector('#signup-confirm');
+const signupError=document.querySelector('#signup-error');
+const signupSubmit=document.querySelector('#signup-submit');
+if(adminPath){signupSwitch.hidden=true;signupForm.hidden=true;}else{signupSwitch.hidden=false;}
 if(adminPath){
  document.title='Administração · Notivox';
  kicker.textContent='ÁREA ADMINISTRATIVA';
@@ -22,6 +31,8 @@ document.querySelector('#password-toggle').addEventListener('click',event=>{
  event.currentTarget.setAttribute('aria-label',visible?'Ocultar senha':'Mostrar senha');
  event.currentTarget.setAttribute('aria-pressed',String(visible));
 });
+signupOpen.addEventListener('click',()=>{form.hidden=true;signupForm.hidden=false;signupError.textContent='';signupIdentity.focus();});
+document.querySelector('#login-return').addEventListener('click',()=>{signupForm.hidden=true;form.hidden=false;error.textContent='';identity.focus();});
 form.addEventListener('submit',async event=>{
  event.preventDefault();error.textContent='';submit.disabled=true;submit.classList.add('is-loading');
  submit.setAttribute('aria-busy','true');submit.textContent='Entrando…';
@@ -31,6 +42,17 @@ form.addEventListener('submit',async event=>{
   location.replace(body.user.role==='admin'?'/admin':'/inicio');
  }catch(cause){error.textContent=cause.message||'Não foi possível conectar. Tente novamente.';}
  finally{submit.disabled=false;submit.classList.remove('is-loading');submit.removeAttribute('aria-busy');submit.textContent='Entrar';}
+});
+signupForm.addEventListener('submit',async event=>{
+ event.preventDefault();signupError.textContent='';
+ if(signupPassword.value!==signupConfirm.value){signupError.textContent='As senhas não coincidem.';signupConfirm.focus();return;}
+ signupSubmit.disabled=true;signupSubmit.classList.add('is-loading');signupSubmit.setAttribute('aria-busy','true');signupSubmit.textContent='Criando conta…';
+ try{
+  const response=await fetch('/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:signupIdentity.value.trim(),password:signupPassword.value,confirm:signupConfirm.value})});
+  const body=await response.json();if(!response.ok)throw Error(body.error||'Não foi possível criar sua conta.');
+  location.replace('/inicio');
+ }catch(cause){signupError.textContent=cause.message||'Não foi possível conectar. Tente novamente.';}
+ finally{signupSubmit.disabled=false;signupSubmit.classList.remove('is-loading');signupSubmit.removeAttribute('aria-busy');signupSubmit.textContent='Criar conta';}
 });
 if(adminPath){
  fetch('/api/status',{cache:'no-store'}).then(async response=>{

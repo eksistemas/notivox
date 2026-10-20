@@ -16,7 +16,7 @@ Ao remover ou substituir um upload, o servidor só apaga o objeto depois que a r
 
 O login usa as contas e sessões já existentes, com senha PBKDF2-SHA512 e cookie `HttpOnly`, `SameSite=Strict`. A tela de músico aceita e-mail ou usuário e senha. O antigo endpoint de login somente por e-mail foi desativado. A administração exige papel `admin`; controles de API, upload e exclusão são verificados no servidor. `department_admin` não recebe acesso administrativo geral.
 
-Não há serviço de envio de e-mail para recuperação de senha configurado neste projeto. O músico deve pedir ao administrador que redefina a senha pelo fluxo administrativo disponível. Contas de músico são provisionadas em Administração → Acessos, com senha inicial definida pela equipe e compartilhada por canal seguro.
+Não há serviço de envio de e-mail para recuperação de senha configurado neste projeto. O músico deve pedir ao administrador que redefina a senha pelo fluxo administrativo disponível. Contas também podem ser criadas pela administração em Administração → Acessos, com senha inicial definida pela equipe e compartilhada por canal seguro.
 
 ## Administrador inicial em produção
 
@@ -58,3 +58,9 @@ O músico não recebe permissão para editar, remover ou regravar o acervo compl
 ## Preparação para cobrança
 
 `GET /api/users` (somente administração) apresenta `songCount`, `billingThreshold` (20) e `billingEligible` (mais de 20 músicas atribuídas à conta). A autoria é persistida em `songs[].createdBy`, sem alteração de esquema de banco. A interface administrativa exibe a contagem e sinaliza contas acima do limite. Não existe cobrança mensal ou vitalícia integrada: plano, preço, consentimento, pagamentos e regras para músicas duplicadas precisam ser definidos antes de ativar uma cobrança.
+
+## Cadastro público e acesso administrativo
+
+A tela `/login` oferece cadastro de músico com e-mail ou nome de usuário e senha de pelo menos oito caracteres. O endpoint `POST /api/signup` cria sempre o papel `member`, aplica limite de tentativas e inicia uma sessão segura. O cadastro não permite escolher nem alterar papel. Não há confirmação por e-mail nem recuperação automática de senha configuradas; a senha pode ser redefinida pela administração.
+
+O endpoint `GET /api/users` e a área de gerenciamento continuam exclusivos para `admin`, verificado no servidor. Cadastro público não concede acesso à lista de contas. Para dar acesso administrativo ao proprietário é necessário usar uma conta `admin` já provisionada; a conta de teste local não existe automaticamente no Supabase. Este recurso usa a tabela de usuários existente e não requer migração SQL.

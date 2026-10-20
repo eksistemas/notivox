@@ -847,7 +847,7 @@ const OfflinePack=(()=>{
  return {supported,read,clear,file,prepare};
 })();
 
-const AppRuntime={version:'3cd744ca306a',offline:false,installPrompt:null,registration:null,updating:false,wake:null,wakeRequested:false};
+const AppRuntime={version:'cdaca79319a1',offline:false,installPrompt:null,registration:null,updating:false,wake:null,wakeRequested:false};
 const originalRuntimeApi=api;
 api=async function(path,options={}){
  const method=options.method||'GET';

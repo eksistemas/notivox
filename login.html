@@ -20,6 +20,20 @@
 <p id="login-error" role="alert" aria-live="assertive"></p>
 <button class="button login-submit" id="login-submit" type="submit">Entrar</button>
 </form>
+<div class="login-signup-switch" id="signup-switch" hidden><span>Ainda não tem acesso?</span><button type="button" id="signup-open">Criar conta de músico</button></div>
+<form id="signup-form" hidden>
+<p class="login-signup-title">Criar conta</p>
+<p class="login-signup-copy">Cadastre-se para acessar o repertório do Notivox.</p>
+<label for="signup-identity">E-mail ou usuário</label>
+<input id="signup-identity" name="username" type="text" autocomplete="username" required minlength="3" maxlength="254" placeholder="Seu e-mail ou usuário">
+<label for="signup-password">Senha</label>
+<input id="signup-password" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="Pelo menos 8 caracteres">
+<label for="signup-confirm">Confirmar senha</label>
+<input id="signup-confirm" name="confirm" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="Digite a senha novamente">
+<p id="signup-error" role="alert" aria-live="assertive"></p>
+<button class="button login-submit" id="signup-submit" type="submit">Criar conta</button>
+<button class="login-signup-back" type="button" id="login-return">Já tenho uma conta</button>
+</form>
 <p class="login-foot" id="login-foot">Problemas para entrar? Fale com o administrador do seu acervo.</p>
 </section>
 </main>

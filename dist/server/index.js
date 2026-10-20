@@ -45,6 +45,19 @@ const b=await body(req),name=username(b.username),pass=password(b.password);if(b
 const salt=random(),hash=await hashPassword(pass,salt);
 const result=await db.prepare("INSERT INTO users(id,username,salt,password_hash,role) SELECT 1,?,?,?,'admin' WHERE NOT EXISTS(SELECT 1 FROM users WHERE role='admin')").bind(name,salt,hash).run();if(!result.meta.changes)fail('O administrador já foi configurado.',409);return newSession(req,db,{id:1,username:name,role:'admin'});
 }
+if(p==='/api/signup'&&req.method==='POST'){
+const b=await body(req);let name;try{name=username(b.username)}catch{fail('Informe um e-mail ou usuário válido.');}
+if(typeof b.password!=='string'||b.password.length<8||b.password.length>128)fail('A senha precisa ter de 8 a 128 caracteres.');
+if(b.password!==b.confirm)fail('As senhas não coincidem.');
+const ip=req.headers.get('cf-connecting-ip')||req.headers.get('x-real-ip')||req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'shared';
+const keys=[await sha('signup-ip:'+ip),await sha('signup-user:'+name)];const counters=await Promise.all(keys.map(k=>attempt(db,k)));
+if(counters[0].count>20||counters[1].count>5)fail('Muitas tentativas de cadastro. Aguarde 10 minutos e tente novamente.',429);
+if(await db.prepare('SELECT id FROM users WHERE username=?').bind(name).first())fail('Não foi possível criar a conta. Verifique os dados ou use outro usuário.',409);
+const salt=random(),hash=await hashPassword(b.password,salt);
+try{await db.prepare("INSERT INTO users(username,salt,password_hash,role) VALUES(?,?,?,'member')").bind(name,salt,hash).run();}
+catch(error){const detail=String(error?.cause?.message||error?.message||'');if(error?.code==='23505'||error?.cause?.code==='23505'||/unique constraint|duplicate key/i.test(detail))fail('Não foi possível criar a conta. Verifique os dados ou use outro usuário.',409);throw error;}
+return newSession(req,db,{id:(await db.prepare('SELECT id FROM users WHERE username=?').bind(name).first()).id,username:name,role:'member'});
+}
 if(p==='/api/login'&&req.method==='POST'){
 const b=await body(req);let name;try{name=username(b.username)}catch{fail('Usuário ou senha incorretos.',401)}
 const ip=req.headers.get('cf-connecting-ip')||req.headers.get('oai-authenticated-user-id')||'local';
